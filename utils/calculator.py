@@ -1,5 +1,5 @@
 
-from utils.supabase_client import supabase
+
 
 
 #step1. 근무시간 계산 
@@ -10,6 +10,20 @@ calculate_work_hours(start, end)
 자정 넘긴 야간근무도 고려해서 end < start일 경우 하루를 더해 계산"""
 
 from datetime import datetime, timedelta
+
+from supabase import create_client
+import os
+from dotenv import load_dotenv
+
+# .env 파일을 불러와서 환경변수 등록
+load_dotenv()
+
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+
+# Supabase 클라이언트 생성
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+
 
 def calculate_work_hours(start: str, end: str) -> float:
     """
@@ -603,9 +617,48 @@ def calculate_custom_pay(entries: list[dict], mode: str = "standard") -> dict:
 
 
 
+#step12. 급여 계산 함수 (우리가 만든 것 사용)
+
+"""코드 요약:
+이건 우리가 만든 급여 시스템을 실제로 호출하는 최종 통합 사용 예시"""
+
+# 이미 정의한 함수라고 가정
+result = calculate_custom_pay(
+    get_entries_for_date_range("2025-05-01", "2025-05-31"),
+    mode="standard"
+)
+print("💰 5월 실수령액:", result["net_with_allowance"])
 
 
 
+#step13. 사용 예시
+
+"""사용 예시 요약 (완전체 테스트)
+
+이 예시는 우리가 만든 calculate_custom_pay() 함수를 두 가지 시나리오에서 실전처럼 테스트"""
+
+# 1. 세금 포함된 5월 월급 계산
+# Supabase에서 2025년 5월 근무한 i_entry 데이터 전부 가져옴
+entries = get_entries_for_date_range("2025-05-01", "2025-05-31")
+
+# "standard" 모드로 급여 계산 (세금·주휴수당 모두 포함)
+result = calculate_custom_pay(entries, mode="standard")
+
+# 결과 출력
+print("🪙 5월 실수령액:", result["net_with_allowance"])
+print(result)  # 전체 세부 급여 breakdown 확인용
+
+# 2. 사용자가 날짜 3개만 선택했을 때 미리보기 (세금 X)
+# Supabase에서 전체 데이터를 가져온 후, 앞에서 3개만 선택해 예시 테스트
+# 실제 프론트에서는 사용자가 선택한 날만 추려서 넘겨줄 수 있음
+selected_entries = entries[:3]  # 혹은 사용자가 고른 날짜에 해당하는 entry만 추출
+
+# "preview" 모드로 계산 (세금 미포함, 주휴수당은 포함)
+preview_result = calculate_custom_pay(selected_entries, mode="preview")
+
+# 미리보기 결과 출력
+print("👀 미리보기 결과 (3일치):", preview_result["net_with_allowance"])
+print(preview_result)
 
 
 
